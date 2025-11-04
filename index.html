@@ -1,0 +1,2678 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permission Request System</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .nav-item {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        /* ✅ Toggle Switch Style */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input { display: none; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px; width: 26px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #007bff; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .toggle-container {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .toggle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .toggle-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #495057;
+            margin: 0;
+        }
+
+        .toggle-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toggle-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .toggle-description {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+
+        .nav-item:hover {
+            background: #e9ecef;
+        }
+
+        .nav-item.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Horizontal scrollbar styling */
+        .table-container::-webkit-scrollbar:horizontal {
+            height: 8px;
+        }
+
+        /* Mobile responsive table */
+        .table {
+            min-width: 800px; /* Ensure table has minimum width for horizontal scroll */
+        }
+
+        .table th,
+        .table td {
+            white-space: nowrap; /* Prevent text wrapping in cells */
+            min-width: 120px; /* Minimum width for each column */
+        }
+
+        /* Specific column widths for better mobile experience */
+        .table th:nth-child(1),
+        .table td:nth-child(1) {
+            min-width: 50px; /* Checkbox column */
+        }
+
+        .table th:nth-child(2),
+        .table td:nth-child(2) {
+            min-width: 150px; /* Name column */
+        }
+
+        .table th:nth-child(3),
+        .table td:nth-child(3) {
+            min-width: 200px; /* Email column */
+        }
+
+        .table th:nth-child(4),
+        .table td:nth-child(4) {
+            min-width: 120px; /* Permission column */
+        }
+
+        .table th:nth-child(5),
+        .table td:nth-child(5) {
+            min-width: 150px; /* From column */
+        }
+
+        .table th:nth-child(6),
+        .table td:nth-child(6) {
+            min-width: 150px; /* To column */
+        }
+
+        .table th:nth-child(7),
+        .table td:nth-child(7) {
+            min-width: 100px; /* Status column */
+        }
+
+        .table th:nth-child(8),
+        .table td:nth-child(8) {
+            min-width: 120px; /* Email Status column */
+        }
+
+        .table th:nth-child(9),
+        .table td:nth-child(9) {
+            min-width: 200px; /* Action column */
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-sent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .email-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .email-status.sent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .email-status.not-sent {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .email-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .email-status-icon {
+            font-size: 12px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        /* Reset spacing for email preview */
+#email-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: normal !important;
+}
+
+/* Optional: make modal content wrap tightly */
+.modal-content {
+    padding: 0 !important;
+    margin: 0 auto !important;
+    width: fit-content; /* shrink to content width */
+}
+
+/* Optional: remove spacing in modal header & actions */
+.modal-header,
+.modal-actions {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 90vw;
+            width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #007bff;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: #f8f9fa;
+            color: #dc3545;
+        }
+
+        .email-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 30px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-line;
+            line-height: 1.8;
+            font-size: 16px;
+            min-height: 400px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .modal-actions .btn {
+            min-width: 120px;
+            padding: 12px 24px;
+            font-weight: 600;
+        }
+
+        .template-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .template-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            margin-bottom: 10px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .template-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .template-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .template-item.drag-over {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+
+        .template-item h4 {
+            margin-bottom: 5px;
+            color: #007bff;
+        }
+
+        .template-item p {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .template-order {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .template-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+
+        .template-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .template-status.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .template-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .template-actions .btn {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .drag-handle {
+            cursor: move;
+            color: #6c757d;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .drag-handle:hover {
+            color: #007bff;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav {
+                flex-direction: column;
+            }
+            
+            .table {
+                font-size: 14px;
+            }
+
+            .table-container {
+                max-height: 400px;
+                margin: 10px 0;
+            }
+
+            .table th,
+            .table td {
+                padding: 8px;
+                font-size: 13px;
+            }
+
+            .btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+
+            .toggle-container {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .toggle-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .toggle-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .table th,
+            .table td {
+                padding: 6px;
+                font-size: 12px;
+            }
+
+            .table th:nth-child(2),
+            .table td:nth-child(2) {
+                min-width: 120px; /* Name column - smaller on very small screens */
+            }
+
+            .table th:nth-child(3),
+            .table td:nth-child(3) {
+                min-width: 150px; /* Email column - smaller on very small screens */
+            }
+
+            .table th:nth-child(5),
+            .table td:nth-child(5),
+            .table th:nth-child(6),
+            .table td:nth-child(6) {
+                min-width: 120px; /* Date columns - smaller on very small screens */
+            }
+
+            .table th:nth-child(8),
+            .table td:nth-child(8) {
+                min-width: 100px; /* Email Status column - smaller on very small screens */
+            }
+
+            .table th:nth-child(9),
+            .table td:nth-child(9) {
+                min-width: 150px; /* Action column - smaller on very small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="nav">
+                <button class="nav-item active" onclick="showPage('user')">User Form</button>
+                <button class="nav-item" onclick="showAdminPage()">Admin Panel</button>
+            </div>
+            
+            <!-- User Form Page -->
+            <div id="user-page" class="content">
+                <h1 style="margin-bottom: 30px; color: #007bff;">Permission Request Form</h1>
+                
+                <div class="card">
+                    <div class="card-header">Submit Permission Request</div>
+                    <div class="card-body">
+                        <form id="user-form">
+                            <div class="form-group">
+                                <label for="name">Full Name</label>
+                                <input type="text" id="name" name="name" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            
+                            <div class="grid">
+                                <div class="form-group">
+                                    <label for="from-time">From Date & Time</label>
+                                    <input type="datetime-local" id="from-time" name="fromTime" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="to-time">To Date & Time</label>
+                                    <input type="datetime-local" id="to-time" name="toTime" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="permission-name">Permission Type</label>
+                                <select id="permission-name" name="permissionName" required>
+                                    <option value="">Select permission type</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn">Submit Request</button>
+                        </form>
+                        
+                        <div id="user-message" class="alert hidden"></div>
+                    </div>
+                </div>
+            </div>
+            
+                <!-- Admin Login Page -->
+            <div id="admin-login-page" class="content hidden">
+                <h1 style="margin-bottom: 30px; color: #007bff;">Admin Login</h1>
+                
+                <div class="card" style="max-width: 400px; margin: 0 auto;">
+                    <div class="card-header">Admin Authentication</div>
+                    <div class="card-body">
+                        <form id="admin-login-form">
+                            <div class="form-group">
+                                <label for="admin-email">Email Address</label>
+                                <input type="email" id="admin-email" name="email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="admin-password">Password</label>
+                                <input type="password" id="admin-password" name="password" required>
+                            </div>
+                            
+                            
+                            <button type="submit" class="btn" style="width: 100%;">Login</button>
+                        </form>
+                        
+                        <div id="login-message" class="alert hidden"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admin Panel Page -->
+            <div id="admin-page" class="content hidden">
+                <h1 style="margin-bottom: 30px; color: #007bff;">Admin Panel</h1>
+                
+                <div style="margin-bottom: 20px;">
+                    <span id="admin-user-info" style="color: #6c757d;"></span>
+                    <div style="float: right; display: flex; align-items: center; gap: 15px;">
+                        <span id="current-mode-indicator" style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #e9ecef; color: #495057;">
+                            Manual Mode
+                        </span>
+                        <button onclick="adminLogout()" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px;">Logout</button>
+                    </div>
+                </div>
+                
+                <!-- Firebase Connection Test -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">System Status</div>
+                    <div class="card-body">
+                        <p>Test your Firebase connection and email server to ensure everything is working properly.</p>
+                        <button onclick="testFirebaseConnection()" class="btn" style="background: #28a745;">Test Firebase Connection</button>
+                        <button onclick="checkEmailServer()" class="btn" style="background: #17a2b8; margin-left: 10px;">Test Email Server</button>
+                        <button onclick="createAdminUser()" class="btn" style="background: #007bff; margin-left: 10px;">Create Admin User</button>
+                        <button onclick="enableOfflineMode()" class="btn" style="background: #ffc107; margin-left: 10px;">Enable Offline Mode</button>
+                        <div id="connection-test-result" style="margin-top: 10px;"></div>
+                        <div id="email-server-status" style="margin-top: 10px;"></div>
+                    </div>
+                </div>
+                <!-- Email Send Mode Toggle -->
+                <div class="toggle-container">
+                    <div class="toggle-header">
+                        <h3 class="toggle-title">📧 Email Send Mode</h3>
+                        <div class="toggle-controls">
+                            <span class="toggle-label" id="mode-label">Manual Send (Admin Approval)</span>
+                            <label class="switch">
+                                <input type="checkbox" id="auto-send-toggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="toggle-description" id="mode-description">
+                        Manual mode requires admin approval before sending emails. Auto mode sends emails immediately when requests are submitted.
+                    </div>
+                </div>
+                
+                <!-- Add Template Section -->
+                <div class="card">
+                    <div class="card-header">Add Permission Template</div>
+                    <div class="card-body">
+                        <form id="template-form">
+                            <div class="form-group">
+                                <label for="template-permission">Permission Name</label>
+                                <input type="text" id="template-permission" name="permission" placeholder="e.g., Exam Leave" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                
+                                <label for="template-order">Display Order</label>
+                                <input type="number" id="template-order" name="order" placeholder="1" min="1" value="1" required>
+                                <small style="color: #6c757d; font-size: 12px;">Lower numbers appear first in the list</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="template-description">Description (Optional)</label>
+                                <input type="text" id="template-description" name="description" placeholder="Brief description of this permission type">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="template-email">Email Template</label>
+                                
+                                <!-- Button Creator Tool -->
+                                <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                    <h4 style="margin-bottom: 15px; color: #007bff;">Add Button to Template</h4>
+                                    
+                                    <div class="form-group">
+                                        <label for="button-url">Button URL</label>
+                                        <input type="url" id="button-url" placeholder="https://example.com" style="margin-bottom: 10px;">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="button-text">Button Text</label>
+                                        <input type="text" id="button-text" placeholder="Start Assessment" value="Start Assessment" style="margin-bottom: 10px;">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="button-color">Button Color</label>
+                                        <input type="color" id="button-color" value="#007bff" style="width: 100px; height: 40px;">
+                                    </div>
+                                    
+                                    <button type="button" onclick="insertButtonAtCursor()" class="btn" style="margin-top: 10px;">Insert Button at Cursor</button>
+                                </div>
+                                
+                                <textarea id="template-email" name="emailTemplate" rows="12" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px; font-family: 'Courier New', monospace;" placeholder="Enter email template. Use {name}, {fromTime}, {toTime}, {permissionName} as placeholders." required></textarea>
+                                <small style="color: #6c757d; font-size: 12px;">
+                                    Available placeholders: {name}, {fromTime}, {toTime}, {permissionName}, {email}
+                                </small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="template-active" name="active" checked> Active Template
+                                </label>
+                                <small style="color: #6c757d; font-size: 12px; display: block;">Inactive templates won't appear in user forms</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success">Add Template</button>
+                        </form>
+                        
+                        <div id="template-message" class="alert hidden"></div>
+                    </div>
+                </div>
+                
+                <!-- Templates List -->
+                <div class="card">
+                    <div class="card-header">
+                        Available Templates
+                        <button onclick="toggleTemplateOrdering()" class="btn" style="float: right; padding: 5px 10px; font-size: 12px;">
+                            <span id="ordering-toggle-text">Enable Ordering</span>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="templates-list" class="template-list">
+                            <!-- Templates will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Requests List -->
+                <div class="card">
+                    <div class="card-header">
+                        User Requests
+                        <span id="requests-count" style="float: right; color: #6c757d; font-size: 14px;"></span>
+                    </div>
+                    <div class="card-body">
+                        <div id="mobile-scroll-hint" style="margin-bottom: 10px; color: #6c757d; font-size: 12px; text-align: center;">
+                            📱 <strong>Mobile users:</strong> Swipe left/right to view all columns
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="select-all-requests" onclick="toggleAllRequests()">
+                                        </th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Permission</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Status</th>
+                                        <th>Email Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="requests-table">
+                                    <!-- Requests will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Bulk Delete Controls -->
+                        <div id="bulk-delete-controls" style="margin-top: 20px; display: none;">
+                            <button onclick="deleteSelectedRequests()" class="btn btn-danger">
+                                Delete Selected Requests
+                            </button>
+                            <span style="margin-left: 10px;">
+                                <span id="selected-count">0</span> requests selected
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Preview Modal -->
+    <div id="email-modal" class="modal hidden" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Email Preview</h3>
+                <button class="close-btn" onclick="closeEmailModal()">&times;</button>
+            </div>
+            <div class="email-preview" id="email-content">
+                <!-- Email content will be inserted here -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="closeEmailModal()">Cancel</button>
+                <button class="btn" onclick="sendEmail()">Open Mail Client</button>
+                <button class="btn btn-primary" onclick="sendEmailServer()">Send via Server</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXNKO1N4R6PvKkbuz3ErXM-7sVLzwtuAc",
+            authDomain: "xamhelp.firebaseapp.com",
+            projectId: "xamhelp",
+            storageBucket: "xamhelp.appspot.com",
+            messagingSenderId: "386143771943",
+            projectNumber: "386143771943",
+            appId: "1:386143771943:web:82e33c54c37f8085e9d57c"  // Generated app ID
+        };
+
+    // URL of the email service (Resend via Vercel serverless function)
+    // Option 1: set your deployed Vercel function URL here
+    // Option 2 (recommended): store it in Firestore at config/email.url; the app will load it at runtime
+    let EMAIL_FUNCTION_URL = "https://YOUR_VERCEL_PROJECT.vercel.app/api/send-request-email";
+
+        // Initialize Firebase with comprehensive error handling
+        let firebaseInitialized = false;
+        let connectionRetryCount = 0;
+        const maxConnectionRetries = 5;
+        
+        // Declare global variables for Firebase services
+        let auth, db;
+        
+        try {
+            // Initialize Firebase app
+            firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            
+            // Set up Firebase Auth error handling
+            auth.onAuthStateChanged((user) => {
+                // This will be handled in the main auth state change listener
+            }, (error) => {
+                console.error('Firebase Auth state observer error:', error);
+                handleFirebaseError('Authentication system error. Please refresh the page.', error);
+            });
+            
+            // Firestore will use default caching settings for offline persistence
+            // No need to explicitly configure settings as it causes override warnings
+            
+            // Set up error handling for Firestore with retry mechanism
+            db.enableNetwork()
+                .then(() => {
+                    console.log('Firebase network enabled');
+                    firebaseInitialized = true;
+                    testFirebaseConnection();
+                    
+                    // Setup admin login handler after Firebase is fully initialized
+                    function setupAdminLoginHandler() {
+                        document.getElementById('admin-login-form').addEventListener('submit', async function(e) {
+                            e.preventDefault();
+                            
+                            const email = document.getElementById('admin-email').value;
+                            const password = document.getElementById('admin-password').value;
+                            const submitButton = this.querySelector('button[type="submit"]');
+                            const messageElement = document.getElementById('login-message');
+                            
+                            // Show loading state
+                            submitButton.disabled = true;
+                            submitButton.textContent = 'Logging in...';
+                            messageElement.classList.add('hidden');
+                            
+                            try {
+                                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                                
+                                // Verify email verification status if needed
+                                if (!userCredential.user.emailVerified) {
+                                    console.log('User email is not verified');
+                                    // You might want to handle unverified emails differently
+                                }
+                                
+                                // Get ID token to ensure authentication is working
+                                const token = await userCredential.user.getIdToken();
+                                console.log('Authentication successful, token received');
+                                
+                                // Show countdown and redirect
+                                let countdown = 5;
+                                messageElement.textContent = `Login successful! Redirecting to admin panel in ${countdown} seconds...`;
+                                messageElement.className = 'alert alert-success';
+                                messageElement.classList.remove('hidden');
+                                
+                                const countdownInterval = setInterval(() => {
+                                    countdown--;
+                                    if (countdown > 0) {
+                                        messageElement.textContent = `Login successful! Redirecting to admin panel in ${countdown} seconds...`;
+                                    } else {
+                                        clearInterval(countdownInterval);
+                                        showPage('admin');
+                                    }
+                                }, 1000);
+                                
+                            } catch (error) {
+                                console.error('Login error:', error);
+                                
+                                // Handle specific Firebase Auth error codes
+                                let errorMessage = 'Login failed. Please try again.';
+                                let showRetryButton = false;
+                                
+                                switch (error.code) {
+                                    case 'auth/user-not-found':
+                                        errorMessage = 'No account found with this email address. Please check your email or contact administrator.';
+                                        break;
+                                    case 'auth/wrong-password':
+                                        errorMessage = 'Incorrect password. Please check your password and try again.';
+                                        showRetryButton = true;
+                                        break;
+                                    case 'auth/invalid-email':
+                                        errorMessage = 'Invalid email address format. Please enter a valid email address.';
+                                        break;
+                                    case 'auth/user-disabled':
+                                        errorMessage = 'This account has been disabled. Please contact administrator.';
+                                        break;
+                                    case 'auth/too-many-requests':
+                                        errorMessage = 'Too many failed login attempts. Please wait a few minutes before trying again.';
+                                        showRetryButton = true;
+                                        break;
+                                    case 'auth/network-request-failed':
+                                        errorMessage = 'Network error. Please check your internet connection and try again.';
+                                        showRetryButton = true;
+                                        break;
+                                    case 'auth/operation-not-allowed':
+                                        errorMessage = 'Email/password authentication is not enabled. Please contact administrator.';
+                                        break;
+                                    case 'auth/weak-password':
+                                        errorMessage = 'Password is too weak. Please use a stronger password.';
+                                        break;
+                                    case 'auth/email-already-in-use':
+                                        errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+                                        break;
+                                    case 'auth/invalid-credential':
+                                        errorMessage = 'Invalid credentials. Please check your email and password.';
+                                        showRetryButton = true;
+                                        break;
+                                    case 'auth/account-exists-with-different-credential':
+                                        errorMessage = 'An account already exists with this email but different sign-in method.';
+                                        break;
+                                    case 'auth/requires-recent-login':
+                                        errorMessage = 'Please log out and log in again to complete this action.';
+                                        showRetryButton = true;
+                                        break;
+                                    default:
+                                        // Check if it's a network-related error
+                                        if (error.message.includes('network') || error.message.includes('timeout') || error.message.includes('connection')) {
+                                            errorMessage = 'Network connection error. Please check your internet connection and try again.';
+                                            showRetryButton = true;
+                                        } else {
+                                            errorMessage = `Login failed: ${error.message}`;
+                                            showRetryButton = true;
+                                        }
+                                        break;
+                                }
+                                
+                                // Show error message
+                                messageElement.textContent = errorMessage;
+                                messageElement.className = 'alert alert-danger';
+                                messageElement.classList.remove('hidden');
+                                
+                                // Add retry button for certain errors
+                                if (showRetryButton) {
+                                    const retryButton = document.createElement('button');
+                                    retryButton.textContent = 'Retry Login';
+                                    retryButton.className = 'btn btn-success';
+                                    retryButton.style.marginTop = '10px';
+                                    retryButton.onclick = function() {
+                                        // Clear the retry button and try login again
+                                        retryButton.remove();
+                                        // Trigger the form submission directly
+                                        const form = document.getElementById('admin-login-form');
+                                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                                        form.dispatchEvent(submitEvent);
+                                    };
+                                    
+                                    // Remove any existing retry button first
+                                    const existingRetry = messageElement.querySelector('.retry-button');
+                                    if (existingRetry) {
+                                        existingRetry.remove();
+                                    }
+                                    
+                                    retryButton.className += ' retry-button';
+                                    messageElement.appendChild(retryButton);
+                                }
+                                
+                            } finally {
+                                // Reset button state
+                                submitButton.disabled = false;
+                                submitButton.textContent = 'Login';
+                            }
+                        });
+                    }
+                    
+                    setupAdminLoginHandler();
+                })
+                .catch(error => {
+                    console.error('Firebase network error:', error);
+                    handleFirebaseError('Network connection error. Please check your internet connection.', error);
+                });
+                
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            handleFirebaseError('Error initializing system. Please refresh the page.', error);
+        }
+        
+        // Test Firebase connection with retry mechanism
+        function testFirebaseConnection() {
+            if (!firebaseInitialized) return;
+            
+            const db = firebase.firestore();
+            const maxRetries = 3;
+            let retryCount = 0;
+            
+            function attemptConnection() {
+                console.log(`Testing Firebase connection (attempt ${retryCount + 1}/${maxRetries})...`);
+                db.collection('templates').limit(1).get()
+                    .then((snapshot) => {
+                        console.log('✅ Firestore connection successful');
+                        console.log('✅ Can read from database');
+                        connectionRetryCount = 0; // Reset retry count on success
+                        showMessage('user-message', '✅ Firebase connected successfully', 'success');
+                        
+                        // Test write capability
+                        return db.collection('connection_test').add({
+                            timestamp: new Date().toISOString(),
+                            test: true
+                        });
+                    })
+                    .then((docRef) => {
+                        console.log('✅ Can write to database, document ID:', docRef.id);
+                        // Clean up test document
+                        return db.collection('connection_test').doc(docRef.id).delete();
+                    })
+                    .then(() => {
+                        console.log('✅ Firebase read/write test completed successfully');
+                    })
+                    .catch(error => {
+                        console.error('❌ Firestore connection error:', error);
+                        retryCount++;
+                        connectionRetryCount++;
+                        
+                        if (retryCount < maxRetries && connectionRetryCount < maxConnectionRetries) {
+                            console.log(`🔄 Retrying connection (attempt ${retryCount + 1}/${maxRetries})...`);
+                            setTimeout(attemptConnection, 2000 * retryCount); // Exponential backoff
+                        } else {
+                            console.error('❌ All connection attempts failed');
+                            handleFirebaseError('❌ Cannot connect to Firebase. Please check your internet connection and try again.', error);
+                        }
+                    });
+            }
+            
+            attemptConnection();
+        }
+
+        // Load EMAIL_FUNCTION_URL from Firestore config document if available
+        async function loadEmailFunctionUrl() {
+            if (!db) return;
+            try {
+                const doc = await db.collection('config').doc('email').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data && data.url) {
+                        EMAIL_FUNCTION_URL = data.url;
+                        console.log('Loaded EMAIL_FUNCTION_URL from Firestore:', EMAIL_FUNCTION_URL);
+                    } else {
+                        console.log('config/email exists but has no url field');
+                    }
+                } else {
+                    console.log('No config/email document found in Firestore');
+                }
+            } catch (error) {
+                console.error('Error loading EMAIL_FUNCTION_URL from Firestore:', error);
+            }
+        }
+        
+        // Comprehensive Firebase error handling
+        function handleFirebaseError(userMessage, error) {
+            console.error('Firebase error:', error);
+            
+            // Determine error type and provide appropriate message
+            let errorType = 'danger';
+            let finalMessage = userMessage;
+            
+            if (error && error.code) {
+                switch (error.code) {
+                    case 'unavailable':
+                        finalMessage = 'Service temporarily unavailable. Please try again in a few moments.';
+                        break;
+                    case 'deadline-exceeded':
+                        finalMessage = 'Request timeout. Please check your internet connection and try again.';
+                        break;
+                    case 'permission-denied':
+                        finalMessage = 'Access denied. Please contact administrator.';
+                        break;
+                    case 'unauthenticated':
+                        finalMessage = 'Authentication required. Please log in again.';
+                        break;
+                    case 'not-found':
+                        finalMessage = 'Resource not found. Please refresh the page.';
+                        break;
+                    case 'already-exists':
+                        finalMessage = 'Resource already exists. Please try again.';
+                        break;
+                    case 'failed-precondition':
+                        finalMessage = 'System precondition failed. Please refresh the page.';
+                        break;
+                    case 'aborted':
+                        finalMessage = 'Operation was aborted. Please try again.';
+                        break;
+                    case 'out-of-range':
+                        finalMessage = 'Request out of range. Please try again.';
+                        break;
+                    case 'unimplemented':
+                        finalMessage = 'Feature not implemented. Please contact administrator.';
+                        break;
+                    case 'internal':
+                        finalMessage = 'Internal server error. Please try again later.';
+                        break;
+                    case 'data-loss':
+                        finalMessage = 'Data loss detected. Please refresh the page.';
+                        break;
+                    default:
+                        if (error.message && error.message.includes('network')) {
+                            finalMessage = 'Network error. Please check your internet connection.';
+                        } else if (error.message && error.message.includes('timeout')) {
+                            finalMessage = 'Request timeout. Please try again.';
+                        }
+                        break;
+                }
+            }
+            
+            showMessage('user-message', finalMessage, errorType);
+        }
+
+        // Data storage
+        let templates = [];
+        let requests = [];
+        let currentUser = null;
+        let isOrderingMode = false;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Document loaded, initializing app...');
+            
+            // Check if user is already logged in with enhanced error handling
+            auth.onAuthStateChanged((user) => {
+                try {
+                    if (user) {
+                        console.log('User authenticated:', user.email);
+                        currentUser = user;
+                        document.getElementById('admin-user-info').textContent = `Logged in as: ${user.email}`;
+                        showPage('admin');
+                        
+                        // Load admin data with error handling
+                        Promise.all([
+                            loadTemplates().catch(error => {
+                                console.error('Error loading templates:', error);
+                                handleFirebaseError('Error loading templates. Please refresh the page.', error);
+                            }),
+                            loadRequests().catch(error => {
+                                console.error('Error loading requests:', error);
+                                handleFirebaseError('Error loading requests. Please refresh the page.', error);
+                            })
+                        ]).catch(error => {
+                            console.error('Error in admin data loading:', error);
+                            handleFirebaseError('Error loading admin data. Some features may not work properly.', error);
+                        });
+                    } else {
+                        console.log('No user authenticated - user logged out');
+                        currentUser = null;
+                        
+                        // Clear admin user info display
+                        const adminUserInfo = document.getElementById('admin-user-info');
+                        if (adminUserInfo) {
+                            adminUserInfo.textContent = '';
+                        }
+                        
+                        // Show user page when user logs out
+                        showPage('user');
+                        console.log('Redirected to user page after logout');
+                    }
+                } catch (error) {
+                    console.error('Error in auth state change:', error);
+                    handleFirebaseError('Error processing authentication. Please refresh the page.', error);
+                }
+            }, (error) => {
+                console.error('Auth state observer error:', error);
+                handleFirebaseError('Authentication system error. Please try again later.', error);
+            });
+            
+            try {
+                await loadEmailFunctionUrl();
+                loadTemplateOptions();
+            } catch (error) {
+                console.error('Error loading template options or email function URL:', error);
+                showMessage('user-message', 'Error loading options. Please refresh the page.', 'danger');
+            }
+            
+        });
+
+        // Navigation
+        function showPage(page) {
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            
+            // Show/hide pages
+            document.getElementById('user-page').classList.toggle('hidden', page !== 'user');
+            document.getElementById('admin-login-page').classList.toggle('hidden', page !== 'admin-login');
+            document.getElementById('admin-page').classList.toggle('hidden', page !== 'admin');
+        }
+
+
+        // Create admin user in Firebase Authentication
+        async function createAdminUser() {
+            try {
+                console.log('Creating admin user in Firebase...');
+                const userCredential = await auth.createUserWithEmailAndPassword('2200032881cseh@gmail.com', 'V@nky2003');
+                console.log('Admin user created successfully:', userCredential.user.email);
+                
+                // Set custom claims for admin role (optional)
+                // This would require Firebase Admin SDK on the server side
+                
+                return userCredential.user;
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    console.log('Admin user already exists');
+                    return null;
+                } else {
+                    console.error('Error creating admin user:', error);
+                    throw error;
+                }
+            }
+        }
+
+        // Enable offline mode for testing
+        function enableOfflineMode() {
+            console.log('Enabling offline mode for testing...');
+            
+            // Create a mock admin user for offline testing
+            currentUser = {
+                email: '2200032881cseh@gmail.com',
+                uid: 'offline-admin-user',
+                getIdToken: () => Promise.resolve('offline-token')
+            };
+            
+            // Update UI
+            document.getElementById('admin-user-info').textContent = `Logged in as: ${currentUser.email} (Offline Mode)`;
+            
+            // Load templates from local storage
+            loadTemplates();
+            
+            // Show success message
+            showMessage('template-message', 'Offline mode enabled. You can now test template functionality locally.', 'success');
+        }
+        <!-- ✅ Email Send Mode Toggle -->
+
+
+
+        // Admin logout
+        function adminLogout() {
+            console.log('Admin logout initiated');
+            
+            try {
+                // Sign out from Firebase if authenticated
+                if (auth && currentUser) {
+                    auth.signOut().then(() => {
+                        console.log('Firebase sign out successful');
+                    }).catch(error => {
+                        console.error('Firebase sign out error:', error);
+                    });
+                }
+                
+                // Clear current user
+                currentUser = null;
+                
+                // Clear any local storage data
+                localStorage.removeItem('templates_backup');
+                
+                // Reset admin user info display
+                const adminUserInfo = document.getElementById('admin-user-info');
+                if (adminUserInfo) {
+                    adminUserInfo.textContent = '';
+                }
+                
+                // Show user page
+                showPage('user');
+                
+                // Show success message
+                showMessage('user-message', 'Successfully logged out. You are now on the user portal.', 'success');
+                
+                console.log('Logout completed successfully');
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                
+                // Force logout even if there's an error
+                currentUser = null;
+                showPage('user');
+                showMessage('user-message', 'Logged out successfully.', 'success');
+            }
+        }
+
+        // Show admin page (with login check)
+        function showAdminPage() {
+            console.log('showAdminPage called, currentUser:', currentUser);
+            if (currentUser) {
+                showPage('admin');
+            } else {
+                showPage('admin-login');
+            }
+        }
+
+        // Template management with comprehensive error handling
+        async function loadTemplates() {
+            console.log('loadTemplates called, currentUser:', currentUser);
+            if (!currentUser) {
+                console.log('No user logged in, skipping template load');
+                return;
+            }
+            
+            try {
+                console.log('Loading templates from Firestore...');
+                const snapshot = await db.collection('templates').orderBy('order', 'asc').get();
+                templates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log(`Successfully loaded ${templates.length} templates`);
+                console.log('Templates data:', templates);
+                
+                // Save to local storage as backup
+                localStorage.setItem('templates_backup', JSON.stringify(templates));
+                
+                const templatesList = document.getElementById('templates-list');
+                templatesList.innerHTML = '';
+                
+                if (templates.length === 0) {
+                    templatesList.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No templates available. Add some templates first.</p>';
+                    return;
+                }
+                
+                templates.forEach((template, index) => {
+                    const templateDiv = document.createElement('div');
+                    templateDiv.className = 'template-item';
+                    templateDiv.draggable = isOrderingMode;
+                    templateDiv.dataset.templateId = template.id;
+                    templateDiv.dataset.order = template.order || 999;
+                    
+                    const statusClass = template.active !== false ? 'active' : 'inactive';
+                    const statusText = template.active !== false ? 'Active' : 'Inactive';
+                    
+                    templateDiv.innerHTML = `
+                        <div class="template-order">${template.order || 999}</div>
+                        ${isOrderingMode ? '<span class="drag-handle">⋮⋮</span>' : ''}
+                        <h4>${template.permission} <span class="template-status ${statusClass}">${statusText}</span></h4>
+                        <p>${template.description || 'No description provided'}</p>
+                        <p><strong>Email Template:</strong> ${template.emailTemplate ? 'Available' : 'Not set'}</p>
+                        <div class="template-actions">
+                            <button class="btn" onclick="viewEmailTemplate('${template.id}')">View Template</button>
+                            <button class="btn" onclick="editTemplate('${template.id}')">Edit</button>
+                            <button class="btn ${template.active !== false ? 'btn-warning' : 'btn-success'}" onclick="toggleTemplateStatus('${template.id}', ${template.active !== false})">
+                                ${template.active !== false ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteTemplate('${template.id}')">Delete</button>
+                        </div>
+                    `;
+                    
+                    // Add drag and drop event listeners if in ordering mode
+                    if (isOrderingMode) {
+                        addDragAndDropListeners(templateDiv);
+                    }
+                    
+                    templatesList.appendChild(templateDiv);
+                });
+            } catch (error) {
+                console.error('Error loading templates from Firestore:', error);
+                
+                // Try to load from local storage backup
+                try {
+                    const backupData = localStorage.getItem('templates_backup');
+                    if (backupData) {
+                        templates = JSON.parse(backupData);
+                        console.log(`Loaded ${templates.length} templates from local storage backup`);
+                        
+                        const templatesList = document.getElementById('templates-list');
+                        templatesList.innerHTML = '';
+                        
+                        if (templates.length === 0) {
+                            templatesList.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No templates available. Add some templates first.</p>';
+                            return;
+                        }
+                        
+                        // Render templates from local storage
+                        templates.forEach((template, index) => {
+                            const templateDiv = document.createElement('div');
+                            templateDiv.className = 'template-item';
+                            templateDiv.draggable = isOrderingMode;
+                            templateDiv.dataset.templateId = template.id;
+                            templateDiv.dataset.order = template.order || 999;
+                            
+                            const statusClass = template.active !== false ? 'active' : 'inactive';
+                            const statusText = template.active !== false ? 'Active' : 'Inactive';
+                            
+                            templateDiv.innerHTML = `
+                                <div class="template-order">${template.order || 999}</div>
+                                ${isOrderingMode ? '<span class="drag-handle">⋮⋮</span>' : ''}
+                                <h4>${template.permission} <span class="template-status ${statusClass}">${statusText}</span></h4>
+                                <p>${template.description || 'No description provided'}</p>
+                                <p><strong>Email Template:</strong> ${template.emailTemplate ? 'Available' : 'Not set'}</p>
+                                <div class="template-actions">
+                                    <button class="btn" onclick="viewEmailTemplate('${template.id}')">View Template</button>
+                                    <button class="btn" onclick="editTemplate('${template.id}')">Edit</button>
+                                    <button class="btn ${template.active !== false ? 'btn-warning' : 'btn-success'}" onclick="toggleTemplateStatus('${template.id}', ${template.active !== false})">
+                                        ${template.active !== false ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                    <button class="btn btn-danger" onclick="deleteTemplate('${template.id}')">Delete</button>
+                                </div>
+                            `;
+                            
+                            if (isOrderingMode) {
+                                addDragAndDropListeners(templateDiv);
+                            }
+                            
+                            templatesList.appendChild(templateDiv);
+                        });
+                        
+                        showMessage('template-message', 'Templates loaded from local backup (offline mode)', 'success');
+                        return;
+                    }
+                } catch (backupError) {
+                    console.error('Error loading from local storage:', backupError);
+                }
+                
+                handleFirebaseError('Error loading templates. Please try again.', error);
+                
+                // Show error state in templates list
+                const templatesList = document.getElementById('templates-list');
+                templatesList.innerHTML = '<p style="text-align: center; color: #dc3545; padding: 20px;">Error loading templates. Please try again.</p>';
+            }
+        }
+
+        async function loadTemplateOptions() {
+            try {
+                // Fetch templates ordered by 'order' then filter out inactive ones on the client.
+                // Using a server-side '!=' query can require additional composite indexes
+                // or cause permission/index errors. Client-side filtering avoids that.
+                const snapshot = await db.collection('templates').orderBy('order', 'asc').get();
+                const allTemplates = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(t => t.active !== false);
+                
+                const permissionSelect = document.getElementById('permission-name');
+                
+                // Clear existing options
+                permissionSelect.innerHTML = '<option value="">Select permission type</option>';
+                
+                // Add template options (only active templates are in allTemplates)
+                allTemplates.forEach(template => {
+                    const permissionOption = document.createElement('option');
+                    permissionOption.value = template.permission;
+                    permissionOption.textContent = template.permission;
+                    permissionSelect.appendChild(permissionOption);
+                });
+            } catch (error) {
+                console.error('Error loading template options:', error);
+                handleFirebaseError('Error loading permission options. Please refresh the page.', error);
+                
+                // Show error state in permission select
+                const permissionSelect = document.getElementById('permission-name');
+                permissionSelect.innerHTML = '<option value="">Error loading options</option>';
+            }
+        }
+
+        async function deleteTemplate(templateId) {
+            if (!currentUser) return;
+            
+            if (confirm('Are you sure you want to delete this template?')) {
+                try {
+                    await db.collection('templates').doc(templateId).delete();
+                    await Promise.all([loadTemplates(), loadTemplateOptions()]);
+                    showMessage('template-message', 'Template deleted successfully!', 'success');
+                } catch (error) {
+                    console.error('Error deleting template:', error);
+                    handleFirebaseError('Error deleting template. Please try again.', error);
+                }
+            }
+        }
+
+
+        // User form submission with enhanced error handling
+        document.getElementById('user-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+            
+            const request = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                fromTime: formData.get('fromTime'),
+                toTime: formData.get('toTime'),
+                permissionName: formData.get('permissionName'),
+                status: 'Pending',
+                submittedAt: new Date().toISOString()
+            };
+            
+            try {
+                // Capture the document reference so we get the ID immediately
+                const docRef = await db.collection('requests').add(request);
+
+                // Reset form
+                this.reset();
+
+                // Show success message based on mode
+                if (autoSendEnabled) {
+                    showMessage('user-message', 'Request submitted successfully! An email has been sent automatically.', 'success');
+                } else {
+                    showMessage('user-message', 'Request submitted successfully! An admin will review and send the email.', 'success');
+                }
+
+                // Reload requests if on admin page
+                if (!document.getElementById('admin-page').classList.contains('hidden')) {
+                    loadRequests();
+                }
+
+                // Check if auto-send is enabled
+                if (autoSendEnabled) {
+                    // Fire-and-forget automatic send using the new document ID
+                    try {
+                        const requestId = docRef.id;
+                        // Call the same helper used by admin flow
+                        sendRequestEmailAutomatically(requestId, request).catch(err => console.error('Auto-send error:', err));
+                    } catch (err) {
+                        console.error('Error while trying to auto-send email:', err);
+                    }
+                } else {
+                    // Manual mode - just show success message
+                    showMessage('user-message', 'Request submitted successfully! An admin will review and send the email.', 'success');
+                }
+
+            } catch (error) {
+                console.error('Error submitting request:', error);
+                handleFirebaseError('Error submitting request. Please try again.', error);
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+            }
+        });
+
+        // Load requests
+        async function loadRequests() {
+            if (!currentUser) return;
+            
+            try {
+                const snapshot = await db.collection('requests').orderBy('submittedAt', 'desc').get();
+                requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Update requests count
+                const countElement = document.getElementById('requests-count');
+                if (countElement) {
+                    countElement.textContent = `${requests.length} request${requests.length !== 1 ? 's' : ''}`;
+                }
+
+                // Check if horizontal scroll is needed and hide mobile instruction after 5 seconds
+                setTimeout(() => {
+                    checkHorizontalScroll();
+                    const mobileInstruction = document.getElementById('mobile-scroll-hint');
+                    if (mobileInstruction && mobileInstruction.style.display !== 'none') {
+                        mobileInstruction.style.opacity = '0.5';
+                        mobileInstruction.style.transition = 'opacity 0.5s ease';
+                    }
+                }, 100);
+                
+                const tableBody = document.getElementById('requests-table');
+                tableBody.innerHTML = '';
+                
+                if (requests.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #6c757d;">No requests found.</td></tr>';
+                    return;
+                }
+                
+                requests.forEach(request => {
+                    const row = document.createElement('tr');
+                    
+                    // Determine email status
+                    let emailStatus = 'pending';
+                    let emailStatusText = 'Not Sent';
+                    let emailStatusIcon = '⏳';
+                    
+                    if (request.emailSent === true || request.status === 'Sent') {
+                        emailStatus = 'sent';
+                        emailStatusText = 'Sent';
+                        emailStatusIcon = '✅';
+                    } else if (request.emailSent === false) {
+                        emailStatus = 'not-sent';
+                        emailStatusText = 'Failed';
+                        emailStatusIcon = '❌';
+                    }
+                    
+                    row.innerHTML = `
+                        <td>
+                            <input type="checkbox" class="request-checkbox" value="${request.id}" onchange="updateSelectedCount()">
+                        </td>
+                        <td>${request.name}</td>
+                        <td>${request.email}</td>
+                        <td>${request.permissionName}</td>
+                        <td>${formatDateTime(request.fromTime)}</td>
+                        <td>${formatDateTime(request.toTime)}</td>
+                        <td><span class="status status-${request.status.toLowerCase()}">${request.status}</span></td>
+                        <td>
+                            <span class="email-status ${emailStatus}">
+                                <span class="email-status-icon">${emailStatusIcon}</span>
+                                ${emailStatusText}
+                            </span>
+                        </td>
+                        <td>
+                            ${request.status === 'Pending' 
+                                ? `<button class="btn btn-success" onclick="previewEmail('${request.id}')" style="padding: 5px 10px; font-size: 12px;">Preview Email</button>`
+                                : '<span style="color: #6c757d;">Email Sent</span>'
+                            }
+                            <button class="btn btn-danger" onclick="deleteRequest('${request.id}')" style="padding: 5px 10px; font-size: 12px; margin-left: 5px;">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            }
+        }
+
+        // Preview email
+        function previewEmail(requestId) {
+            const request = requests.find(r => r.id === requestId);
+            if (!request) return;
+            
+            // Show email preview
+            showEmailPreview(request);
+        }
+
+        // Send approval email (simulation)
+        async function sendApproval(requestId) {
+            if (!currentUser) return;
+            
+            const request = requests.find(r => r.id === requestId);
+            if (!request) return;
+            
+            try {
+                // Update status in Firebase
+                await db.collection('requests').doc(requestId).update({
+                    status: 'Sent',
+                    sentAt: new Date().toISOString()
+                });
+                
+                // Reload requests
+                loadRequests();
+            } catch (error) {
+                console.error('Error updating request status:', error);
+                alert('Error updating request status');
+            }
+        }
+
+        // Utility functions
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `alert alert-${type}`;
+            element.classList.remove('hidden');
+            
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 3000);
+        }
+
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            return date.toLocaleString();
+        }
+
+        // Request deletion and selection handling
+        async function deleteRequest(requestId) {
+            if (!currentUser) return;
+            
+            if (confirm('Are you sure you want to delete this request?')) {
+                try {
+                    await db.collection('requests').doc(requestId).delete();
+                    showMessage('user-message', 'Request deleted successfully!', 'success');
+                    loadRequests(); // Reload the requests table
+                } catch (error) {
+                    console.error('Error deleting request:', error);
+                    handleFirebaseError('Error deleting request. Please try again.', error);
+                }
+            }
+        }
+
+        function toggleAllRequests() {
+            const checkboxes = document.querySelectorAll('.request-checkbox');
+            const selectAllCheckbox = document.getElementById('select-all-requests');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selectedCount = document.querySelectorAll('.request-checkbox:checked').length;
+            document.getElementById('selected-count').textContent = selectedCount;
+            document.getElementById('bulk-delete-controls').style.display = selectedCount > 0 ? 'block' : 'none';
+        }
+
+        async function deleteSelectedRequests() {
+            if (!currentUser) return;
+            
+            const selectedCheckboxes = document.querySelectorAll('.request-checkbox:checked');
+            if (selectedCheckboxes.length === 0) return;
+            
+            if (confirm(`Are you sure you want to delete ${selectedCheckboxes.length} selected requests?`)) {
+                try {
+                    const batch = db.batch();
+                    selectedCheckboxes.forEach(checkbox => {
+                        const requestId = checkbox.value;
+                        const requestRef = db.collection('requests').doc(requestId);
+                        batch.delete(requestRef);
+                    });
+                    
+                    await batch.commit();
+                    showMessage('user-message', `${selectedCheckboxes.length} requests deleted successfully!`, 'success');
+                    loadRequests(); // Reload the requests table
+                } catch (error) {
+                    console.error('Error deleting requests:', error);
+                    handleFirebaseError('Error deleting requests. Please try again.', error);
+                }
+            }
+        }
+
+        // Email preview and sending
+        let currentEmailRequest = null;
+
+        // View email template
+        function viewEmailTemplate(templateId) {
+            const template = templates.find(t => t.id === templateId);
+            if (!template) return;
+            
+            currentEmailRequest = null; // Clear current request as we're just viewing template
+            
+            document.getElementById('email-content').textContent = template.emailTemplate || 'No email template set for this permission type.';
+            const modal = document.getElementById('email-modal');
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+
+        function showEmailPreview(request) {
+            currentEmailRequest = request;
+            
+            // Find the template for this permission type
+            const template = templates.find(t => t.permission === request.permissionName);
+            let emailContent = '';
+            
+            if (template && template.emailTemplate) {
+                // Replace placeholders in the template
+                emailContent = template.emailTemplate
+                    .replace(/{name}/g, request.name.toUpperCase())
+                    .replace(/{permissionName}/g, request.permissionName)
+                    .replace(/{fromTime}/g, formatDateTime(request.fromTime))
+                    .replace(/{toTime}/g, formatDateTime(request.toTime));
+            } else {
+                // If no template is found, show error message
+                emailContent = 'No email template found for this permission type. Please add a template in the admin portal first.';
+            }
+
+            // Prepare a minimal HTML version: escape content, then convert first URL into a CTA button
+            function escapeHtml(str) {
+                return str.replace(/[&<>"']/g, function (m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]) });
+            }
+
+            function linkToButtonHtml(text) {
+                // Create a complete HTML email template with inline CSS for preview
+                const emailTemplate = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Permission Request</title>
+                    </head>
+                    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8f9fa; line-height: 1.6;">
+                        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <!-- Header -->
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">{permissionName}</h1>
+                            </div>
+                            
+                            <!-- Content -->
+                            <div style="padding: 30px;">
+                                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                    ${text.replace(/\n/g, '<br>')}
+                                </div>
+                                
+                                <!-- Footer -->
+                                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                                    <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                                        This is an automated message from ExamHelp System
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `;
+                
+                return emailTemplate;
+            }
+
+
+            const emailHtml = createEmailTemplate(emailContent, request);
+            const contentEl = document.getElementById('email-content');
+            contentEl.innerHTML = emailHtml;
+            document.getElementById('email-modal').style.display = 'flex';
+            document.getElementById('email-modal').classList.remove('hidden');
+        }
+
+        function closeEmailModal() {
+            console.log('Closing email modal...');
+            const modal = document.getElementById('email-modal');
+            // Hide via class (for CSS) and clear inline display (set when opening)
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            currentEmailRequest = null;
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('email-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEmailModal();
+            }
+        });
+
+        // Close modal with ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !document.getElementById('email-modal').classList.contains('hidden')) {
+                closeEmailModal();
+            }
+        });
+
+        function sendEmail() {
+            if (!currentEmailRequest) return;
+            
+            // Find the template for this permission type
+            const template = templates.find(t => t.permission === currentEmailRequest.permissionName);
+            if (!template || !template.emailTemplate) {
+                alert('No email template found. Please add a template first.');
+                return;
+            }
+            
+            // Replace placeholders in the template
+            const body = template.emailTemplate
+                .replace(/{name}/g, currentEmailRequest.name.toUpperCase())
+                .replace(/{permissionName}/g, currentEmailRequest.permissionName)
+                .replace(/{fromTime}/g, formatDateTime(currentEmailRequest.fromTime))
+                .replace(/{toTime}/g, formatDateTime(currentEmailRequest.toTime));
+                
+            const subject = `NOTE: ${currentEmailRequest.permissionName}`;
+
+            // Create mailto link with proper encoding
+            const mailtoLink = `mailto:${currentEmailRequest.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Open email client
+            window.open(mailtoLink);
+
+            // Note: Do NOT auto-mark as sent when opening mail client. Use server send or manual mark.
+            // Close modal (leave status unchanged)
+            closeEmailModal();
+        }
+
+        // Send email via server-side function (recommended)
+        async function sendEmailServer(requestId = null) {
+            // Use provided requestId or currentEmailRequest
+            const request = requestId ? requests.find(r => r.id === requestId) : currentEmailRequest;
+            
+            if (!request) {
+                console.error('No request data available for sending email');
+                showMessage('user-message', 'No request data available. Please try again.', 'danger');
+                return;
+            }
+
+            const template = templates.find(t => t.permission === request.permissionName);
+            if (!template || !template.emailTemplate) {
+                alert('No email template found. Please add a template first.');
+                return;
+            }
+
+            const body = template.emailTemplate
+                .replace(/{name}/g, request.name.toUpperCase())
+                .replace(/{permissionName}/g, request.permissionName)
+                .replace(/{fromTime}/g, formatDateTime(request.fromTime))
+                .replace(/{toTime}/g, formatDateTime(request.toTime));
+
+            const subject = ` ${request.permissionName}`;
+
+            if (!EMAIL_FUNCTION_URL) {
+                // If not configured, fall back to local development server on port 5500.
+                // This allows local testing without deploying a Cloud Function.
+                EMAIL_FUNCTION_URL = 'http://localhost:5500/send-request-email';
+                console.warn('EMAIL_FUNCTION_URL not configured; falling back to', EMAIL_FUNCTION_URL);
+                showMessage('user-message', 'Using local email server (development). Configure Email Service URL in Firestore for production.', 'success');
+            }
+
+            try {
+                // Build html version for server send (same conversion as preview)
+                function escapeHtml(str) {
+                    return str.replace(/[&<>"']/g, function (m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]) });
+                }
+                function linkToButtonHtml(text) {
+                    // Create a complete HTML email template with inline CSS
+                    const emailTemplate = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>Permission Request</title>
+                        </head>
+                        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8f9fa; line-height: 1.6;">
+                            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                                <!-- Header -->
+                                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Permission Request</h1>
+                                </div>
+                                
+                                <!-- Content -->
+                                <div style="padding: 30px;">
+                                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                        ${text.replace(/\n/g, '<br>')}
+                                    </div>
+                                    
+                                    <!-- Footer -->
+                                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                                        <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                                            This is an automated message from ExamHelp System
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                    `;
+                    
+                    return emailTemplate;
+                }
+
+                const html = createEmailTemplate(body, request);
+
+                const res = await fetch(EMAIL_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId: request.id, to: request.email, subject, body, html })
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Server send failed: ${res.status} ${text}`);
+                }
+
+                // Update status and email sent flag
+                await db.collection('requests').doc(request.id).update({ 
+                    status: 'Sent', 
+                    sentAt: new Date().toISOString(),
+                    emailSent: true
+                });
+
+                showMessage('user-message', 'Email sent via server successfully', 'success');
+                closeEmailModal();
+                
+                // Reload requests to show updated status
+                loadRequests();
+            } catch (error) {
+                console.error('Error sending email via server:', error);
+                
+                // Mark email as failed
+                try {
+                    await db.collection('requests').doc(request.id).update({ 
+                        emailSent: false,
+                        emailError: error.message
+                    });
+                } catch (updateError) {
+                    console.error('Error updating email status:', updateError);
+                }
+                
+                const msg = error && error.message ? error.message : 'Error sending email via server. Check email service URL and Resend configuration.';
+                showMessage('user-message', msg, 'danger');
+            }
+        }
+
+// ------------------------------
+// Email Send Mode Toggle Logic
+// ------------------------------
+let autoSendEnabled = false;
+
+function initAutoSendToggle() {
+  const toggle = document.getElementById("auto-send-toggle");
+  const label = document.getElementById("mode-label");
+  const description = document.getElementById("mode-description");
+
+  // Load state from localStorage
+  const saved = localStorage.getItem("autoSendEnabled");
+  autoSendEnabled = saved === "true";
+
+  if (toggle && label && description) {
+    toggle.checked = autoSendEnabled;
+    updateToggleUI();
+
+    toggle.addEventListener("change", () => {
+      autoSendEnabled = toggle.checked;
+      localStorage.setItem("autoSendEnabled", autoSendEnabled);
+      updateToggleUI();
+      console.log("📩 Email send mode:", autoSendEnabled ? "AUTO" : "MANUAL");
+      
+      // Show confirmation message
+      showMessage('template-message', 
+        autoSendEnabled 
+          ? '✅ Auto-send mode enabled! New requests will be sent automatically.' 
+          : '⏸️ Manual mode enabled! New requests require admin approval.', 
+        'success'
+      );
+    });
+  }
+}
+
+function updateToggleUI() {
+  const label = document.getElementById("mode-label");
+  const description = document.getElementById("mode-description");
+  const indicator = document.getElementById("current-mode-indicator");
+  
+  if (autoSendEnabled) {
+    label.textContent = "Automatic Send via Server";
+    description.textContent = "Auto mode sends emails immediately when requests are submitted. No admin approval required.";
+    if (indicator) {
+      indicator.textContent = "Auto Mode";
+      indicator.style.background = "#d4edda";
+      indicator.style.color = "#155724";
+    }
+  } else {
+    label.textContent = "Manual Send (Admin Approval)";
+    description.textContent = "Manual mode requires admin approval before sending emails. Use the Preview Email button to review and send.";
+    if (indicator) {
+      indicator.textContent = "Manual Mode";
+      indicator.style.background = "#e9ecef";
+      indicator.style.color = "#495057";
+    }
+  }
+}
+
+// Initialize toggle after DOM loaded
+document.addEventListener("DOMContentLoaded", initAutoSendToggle);
+
+// Function to check if horizontal scroll is needed
+function checkHorizontalScroll() {
+    const tableContainer = document.querySelector('.table-container');
+    const mobileHint = document.getElementById('mobile-scroll-hint');
+    
+    if (tableContainer && mobileHint) {
+        const hasHorizontalScroll = tableContainer.scrollWidth > tableContainer.clientWidth;
+        
+        if (hasHorizontalScroll) {
+            mobileHint.style.display = 'block';
+        } else {
+            mobileHint.style.display = 'none';
+        }
+    }
+}
+
+// Check scroll on window resize
+window.addEventListener('resize', checkHorizontalScroll);
+
+// Function to check if email server is running
+async function checkEmailServer() {
+    const statusElement = document.getElementById('email-server-status');
+    
+    try {
+        const response = await fetch(EMAIL_FUNCTION_URL, {
+            method: 'GET',
+            mode: 'cors'
+        });
+        
+        if (response.ok) {
+            console.log('✅ Email server is running');
+            if (statusElement) {
+                statusElement.innerHTML = '<div style="color: #28a745; font-weight: 600;">✅ Email server is running and accessible</div>';
+            }
+            return true;
+        } else {
+            console.warn('⚠️ Email server responded with error:', response.status);
+            if (statusElement) {
+                statusElement.innerHTML = `<div style="color: #ffc107; font-weight: 600;">⚠️ Email server responded with error: ${response.status}</div>`;
+            }
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Email server is not accessible:', error.message);
+        if (statusElement) {
+            statusElement.innerHTML = '<div style="color: #dc3545; font-weight: 600;">❌ Email service is not accessible. Verify EMAIL_FUNCTION_URL and deployment.</div>';
+        }
+        showMessage('user-message', 'Email service is not reachable. Verify EMAIL_FUNCTION_URL and deployment.', 'danger');
+        return false;
+    }
+}
+
+// Check server connectivity on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkEmailServer();
+});
+
+// Function to create a professional email template with inline CSS
+function createEmailTemplate(content, requestData = null) {
+    // Extract URLs from content to create buttons
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urls = content.match(urlRegex) || [];
+    
+    // Create button HTML for each URL
+    let buttonHtml = '';
+    if (urls.length > 0) {
+        urls.forEach((url, index) => {
+            buttonHtml += `
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="${url}" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       style="display: inline-block; 
+                              padding: 15px 30px; 
+                              background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
+                              color: #ffffff; 
+                              text-decoration: none; 
+                              border-radius: 8px; 
+                              font-weight: 600; 
+                              font-size: 16px;
+                              box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+                              transition: all 0.3s ease;">
+                        ${index === 0 ? 'Start Assessment' : 'View Details'}
+                    </a>
+                </div>
+            `;
+        });
+    }
+    
+    // Replace URLs in content with placeholder
+    let processedContent = content || ''; // ensure content is defined
+
+return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permission Request - ExamHelp</title>
+    <style>
+        /* Minimal global styles to avoid breaking your template */
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8f9fa; }
+        /* You can add optional body background or wrapper if needed */
+    </style>
+</head>
+<body>
+    ${processedContent} <!-- Template will be injected exactly as it is -->
+</body>
+</html>
+`;
+
+}
+        // Automatically send email for a newly submitted request (no admin click)
+        async function sendRequestEmailAutomatically(requestId, requestData) {
+            // Check if email server is running first
+            const serverRunning = await checkEmailServer();
+            if (!serverRunning) {
+                console.error('Cannot send email: Server is not running');
+                return;
+            }
+
+            // Find the template for this permission type. If none exists, fall back
+            // to a simple default body so emails are sent immediately without
+            // requiring an admin to create/approve templates.
+            const template = templates.find(t => t.permission === requestData.permissionName);
+            let body;
+            if (!template || !template.emailTemplate) {
+                console.warn('No template available for auto-send:', requestData.permissionName, '- using default message');
+                body = `Hello ${requestData.name},\n\n` +
+                    `Your request for ${requestData.permissionName} from ${formatDateTime(requestData.fromTime)} to ${formatDateTime(requestData.toTime)} has been received.\n\n` +
+                    `We will process it shortly.\n\nThanks,\nExamHelp Team`;
+            } else {
+                body = template.emailTemplate
+                    .replace(/{name}/g, requestData.name.toUpperCase())
+                    .replace(/{permissionName}/g, requestData.permissionName)
+                    .replace(/{fromTime}/g, formatDateTime(requestData.fromTime))
+                    .replace(/{toTime}/g, formatDateTime(requestData.toTime))
+                    
+            }
+
+            const subject = ` ${requestData.permissionName}`;
+
+            // Build html version (same helper used elsewhere)
+            function escapeHtml(str) {
+                return str.replace(/[&<>"']/g, function (m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]) });
+            }
+            function linkToButtonHtml(text) {
+                // Create a complete HTML email template with inline CSS
+                const emailTemplate = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Permission Request</title>
+                    </head>
+                    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8f9fa; line-height: 1.6;">
+                        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <!-- Header -->
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Permission Request</h1>
+                            </div>
+                            
+                            <!-- Content -->
+                            <div style="padding: 30px;">
+                                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                    ${text.replace(/\n/g, '<br>')}
+                                </div>
+                                
+                                <!-- Footer -->
+                                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                                    <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                                        This is an automated message from ExamHelp System
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `;
+                
+                return emailTemplate;
+            }
+
+            const html = createEmailTemplate(body, requestData);
+
+            // Use configured function URL or local fallback
+            let url = EMAIL_FUNCTION_URL || 'http://localhost:5500/send-request-email';
+
+            // Send to server
+            console.log('Sending email request to:', url);
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId, to: requestData.email, subject, body, html })
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    console.error('Server response error:', res.status, text);
+                    throw new Error(`Auto-send failed: ${res.status} ${text}`);
+                }
+
+                const result = await res.json();
+                console.log('Email sent successfully:', result);
+
+                // Mark as sent in Firestore
+                try {
+                    await db.collection('requests').doc(requestId).update({ 
+                        status: 'Sent', 
+                        sentAt: new Date().toISOString(),
+                        emailSent: true
+                    });
+                    console.log('Auto-send success for request', requestId);
+                } catch (err) {
+                    console.error('Error marking request as sent after auto-send:', err);
+                }
+            } catch (fetchError) {
+                console.error('Fetch error in auto-send:', fetchError);
+                
+                // Mark email as failed in Firestore
+                try {
+                    await db.collection('requests').doc(requestId).update({ 
+                        emailSent: false,
+                        emailError: fetchError.message
+                    });
+                } catch (updateError) {
+                    console.error('Error updating email failure status:', updateError);
+                }
+                
+                // Don't throw the error, just log it to prevent unhandled promise rejection
+                showMessage('user-message', 'Failed to send email automatically. Please try again or contact admin.', 'danger');
+            }
+        }
+
+        // Template ordering and management functions
+        function toggleTemplateOrdering() {
+            isOrderingMode = !isOrderingMode;
+            const toggleText = document.getElementById('ordering-toggle-text');
+            toggleText.textContent = isOrderingMode ? 'Disable Ordering' : 'Enable Ordering';
+            loadTemplates(); // Reload templates with new ordering mode
+        }
+
+        function addDragAndDropListeners(element) {
+            element.addEventListener('dragstart', handleDragStart);
+            element.addEventListener('dragover', handleDragOver);
+            element.addEventListener('drop', handleDrop);
+            element.addEventListener('dragend', handleDragEnd);
+        }
+
+        function handleDragStart(e) {
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.outerHTML);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.target.classList.add('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.classList.remove('drag-over');
+            
+            const draggedElement = document.querySelector('.dragging');
+            const dropTarget = e.target.closest('.template-item');
+            
+            if (draggedElement && dropTarget && draggedElement !== dropTarget) {
+                // Swap the elements
+                const parent = dropTarget.parentNode;
+                const nextSibling = dropTarget.nextSibling;
+                
+                parent.removeChild(draggedElement);
+                parent.insertBefore(draggedElement, nextSibling);
+                
+                // Update order in database
+                updateTemplateOrder();
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.template-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        async function updateTemplateOrder() {
+            const templateItems = document.querySelectorAll('.template-item');
+            const updates = [];
+            
+            templateItems.forEach((item, index) => {
+                const templateId = item.dataset.templateId;
+                const newOrder = index + 1;
+                updates.push(
+                    db.collection('templates').doc(templateId).update({ order: newOrder })
+                );
+            });
+            
+            try {
+                await Promise.all(updates);
+                showMessage('template-message', 'Template order updated successfully!', 'success');
+            } catch (error) {
+                console.error('Error updating template order:', error);
+                handleFirebaseError('Error updating template order. Please try again.', error);
+            }
+        }
+
+        async function toggleTemplateStatus(templateId, currentStatus) {
+            if (!currentUser) return;
+            
+            try {
+                await db.collection('templates').doc(templateId).update({
+                    active: !currentStatus
+                });
+                
+                showMessage('template-message', `Template ${!currentStatus ? 'activated' : 'deactivated'} successfully!`, 'success');
+                loadTemplates();
+                loadTemplateOptions();
+            } catch (error) {
+                console.error('Error toggling template status:', error);
+                handleFirebaseError('Error updating template status. Please try again.', error);
+            }
+        }
+
+        // Helper to insert a button at cursor position in template editor
+        function insertButtonAtCursor() {
+            const textarea = document.getElementById('template-email');
+            const url = document.getElementById('button-url').value;
+            const text = document.getElementById('button-text').value || 'Start Assessment';
+            const color = document.getElementById('button-color').value || '#007bff';
+            
+            const buttonHtml = `<a href="${url}" style="background-color: ${color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">${text}</a>`;
+            
+            // Get cursor position and insert button
+            const cursorPos = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const textAfter = textarea.value.substring(cursorPos);
+            textarea.value = textBefore + buttonHtml + textAfter;
+        }
+
+        function editTemplate(templateId) {
+            const template = templates.find(t => t.id === templateId);
+            if (!template) return;
+            
+            // Populate form with template data
+            document.getElementById('template-permission').value = template.permission;
+            document.getElementById('template-order').value = template.order || 1;
+            document.getElementById('template-description').value = template.description || '';
+            document.getElementById('template-email').value = template.emailTemplate || '';
+            document.getElementById('template-active').checked = template.active !== false;
+                
+                // Change form to edit mode
+                const form = document.getElementById('template-form');
+                form.dataset.editMode = 'true';
+                form.dataset.editId = templateId;            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.textContent = 'Update Template';
+            submitButton.className = 'btn btn-warning';
+            
+            // Scroll to form
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Update template form submission to handle both add and edit
+        document.getElementById('template-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Template form submitted');
+            
+            if (!currentUser) {
+                console.warn('Template form submitted without user authentication');
+                showMessage('template-message', 'Please login first', 'danger');
+                return;
+            }
+            
+            // Verify user is still authenticated
+            try {
+                const token = await currentUser.getIdToken();
+                console.log('User authentication verified, token received');
+            } catch (authError) {
+                console.error('User authentication failed:', authError);
+                console.log('Attempting to continue without strict authentication...');
+                // Continue anyway for testing purposes
+            }
+            
+            // Validate form data
+            const formData = new FormData(this);
+            const permission = formData.get('permission');
+            const emailTemplate = formData.get('emailTemplate');
+            const order = parseInt(formData.get('order')) || 1;
+            const description = formData.get('description') || '';
+            const active = formData.has('active');
+            
+            if (!permission || !emailTemplate) {
+                console.warn('Invalid form data:', { permission, emailTemplate });
+                showMessage('template-message', 'Please fill in all required fields', 'danger');
+                return;
+            }
+            
+            const template = {
+                permission: permission,
+                emailTemplate: emailTemplate,
+                order: order,
+                description: description,
+                active: active,
+                updatedBy: currentUser.email
+            };
+            
+            try {
+                const isEditMode = this.dataset.editMode === 'true';
+                const templateId = this.dataset.editId;
+                
+                console.log('Saving template:', template);
+                console.log('Is edit mode:', isEditMode);
+                console.log('Template ID:', templateId);
+                
+                if (isEditMode && templateId) {
+                    // Update existing template
+                    template.updatedAt = new Date().toISOString();
+                    await db.collection('templates').doc(templateId).update(template);
+                    console.log('Template updated successfully');
+                    showMessage('template-message', 'Template updated successfully!', 'success');
+                } else {
+                    // Add new template
+                    template.createdAt = new Date().toISOString();
+                    const docRef = await db.collection('templates').add(template);
+                    console.log('Template added successfully with ID:', docRef.id);
+                    showMessage('template-message', 'Template added successfully!', 'success');
+                }
+                
+                // Reset form
+                this.reset();
+                this.removeAttribute('data-edit-mode');
+                this.removeAttribute('data-edit-id');
+                
+                const submitButton = this.querySelector('button[type="submit"]');
+                submitButton.textContent = 'Add Template';
+                submitButton.className = 'btn btn-success';
+                
+                // Reload templates
+                await Promise.all([loadTemplates(), loadTemplateOptions()]);
+            } catch (error) {
+                console.error('Error saving template:', error);
+                const isEditMode = this.dataset.editMode === 'true';
+                
+                // Handle specific Firebase errors
+                if (error.code === 'permission-denied') {
+                    showMessage('template-message', 'Permission denied. Please make sure you are logged in as an admin user.', 'danger');
+                } else if (error.code === 'unauthenticated') {
+                    showMessage('template-message', 'Authentication required. Please login again.', 'danger');
+                } else {
+                    handleFirebaseError(`Error ${isEditMode ? 'updating' : 'adding'} template: ${error.message}`, error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

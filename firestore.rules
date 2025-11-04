@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Templates: public read, authenticated users can write (temporary for testing)
+    match /templates/{template} {
+      // Anyone can read templates (used by the public form)
+      allow read: if true;
+      // Allow write only if the request is authenticated. For production,
+      // consider restricting to admin users with custom claims.
+      allow write: if request.auth != null;
+    }
+    
+    // Allow read/write access to requests
+    match /requests/{request} {
+      allow read, write: if true;  // For testing, allow all access to requests
+    }
+    
+    // Allow access to connection test collection
+    match /connection_test/{document} {
+      allow read, write: if true;
+    }
+  }
+}
